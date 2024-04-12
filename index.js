@@ -70,6 +70,8 @@ app.post("/scrape", async (req, res) => {
           return extractParagraph(html);
         } else if (tag === "div") {
           return extractDoubleTween($, html);
+        } else if (tag === "video") {
+          return extractVideo($, html);
         }
       })
     );
@@ -88,7 +90,8 @@ async function extractTitle($, html, url, tag) {
   const $html = cheerio.load(html);
 
   // Verifica se o elemento contém apenas texto direto
-  const hasOnlyText = $html(tag).children().length === 0 && $html(tag).text().trim().length > 0;
+  const hasOnlyText =
+    $html(tag).children().length === 0 && $html(tag).text().trim().length > 0;
 
   if (!hasOnlyText) {
     return null; // Retorna null se o elemento não contiver apenas texto direto
@@ -119,19 +122,18 @@ async function extractTitle($, html, url, tag) {
     paragraph: false,
     mobileIsSlider: false,
     icon: "/title.svg",
-    preview: "https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-titolo-2.png",
+    preview:
+      "https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-titolo-2.png",
     hideOnMobile: false,
     id: uuidv4(),
   };
 }
 
-
-
 async function extractParagraph(html) {
   const $ = cheerio.load(html);
-  
+
   // Verifica se há um único <p> com texto direto
-  const paragraphs = $("p").filter(function() {
+  const paragraphs = $("p").filter(function () {
     return $(this).children().length === 0 && $(this).text().trim().length > 0;
   });
 
@@ -142,15 +144,19 @@ async function extractParagraph(html) {
       blockName: "Paragrafo",
       html: `<p>${text}</p>`,
       icon: "/paragraph.svg",
-      preview: "https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-paragraph-2.png",
+      preview:
+        "https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-paragraph-2.png",
       id: uuidv4(),
       paragraph: false,
     };
   }
 
   // Verifica se há um único <span> sem um <p> em volta
-  const spans = $("span").filter(function() {
-    return $(this).parent().get(0).tagName.toLowerCase() !== 'p' && $(this).text().trim().length > 0;
+  const spans = $("span").filter(function () {
+    return (
+      $(this).parent().get(0).tagName.toLowerCase() !== "p" &&
+      $(this).text().trim().length > 0
+    );
   });
 
   if (spans.length === 1) {
@@ -160,7 +166,8 @@ async function extractParagraph(html) {
       blockName: "Paragrafo",
       html: `<span>${text}</span>`,
       icon: "/paragraph.svg",
-      preview: "https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-paragraph-2.png",
+      preview:
+        "https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-paragraph-2.png",
       id: uuidv4(),
       paragraph: false,
     };
@@ -170,12 +177,11 @@ async function extractParagraph(html) {
   return null;
 }
 
-
 async function extractHeader($, html, url) {
   const src = $(html).attr("src");
 
-   // Verifica se a URL da imagem já foi usada no doubleTween
-   if (usedImageUrls.has(src)) {
+  // Verifica se a URL da imagem já foi usada no doubleTween
+  if (usedImageUrls.has(src)) {
     return null; // Retorna null se a imagem já foi usada
   }
 
@@ -218,25 +224,26 @@ async function extractHeader($, html, url) {
     brand: null,
     blockName: "Poster",
     icon: "/image.svg",
-    preview:"https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-plain-image-2.png",
-    type:"header",
-    "background-color":"#f5f5f5",
-    imagePositionY:"99%",
-    imagePositionX:"80%",
-    imageSizeHeigh:"300px",
-    imageSizeWidth:"auto",
-    imagePositionXMobile:"right",
-    imagePositionYMobile:"100%",
-    imageSizeWidthMobile:"auto",
-    imageSizeHeightMobile:"180px",
-    backgroundCover:true,
-    ratioTablet:"56vw",
-    verticalAlignmentTablet:"MIDDLE",
-    horizontalAlignmentTablet:"LEFT",
-    titleTablet:"#000000",
-    descriptionTablet:"#000000",
+    preview:
+      "https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-plain-image-2.png",
+    type: "header",
+    "background-color": "#f5f5f5",
+    imagePositionY: "99%",
+    imagePositionX: "80%",
+    imageSizeHeigh: "300px",
+    imageSizeWidth: "auto",
+    imagePositionXMobile: "right",
+    imagePositionYMobile: "100%",
+    imageSizeWidthMobile: "auto",
+    imageSizeHeightMobile: "180px",
+    backgroundCover: true,
+    ratioTablet: "56vw",
+    verticalAlignmentTablet: "MIDDLE",
+    horizontalAlignmentTablet: "LEFT",
+    titleTablet: "#000000",
+    descriptionTablet: "#000000",
     imageURLTablet: src,
-    secondButtonText:"#000000",
+    secondButtonText: "#000000",
     id: uuidv4(),
   };
 }
@@ -270,7 +277,7 @@ async function extractDoubleTweenFromImages(imgs, $) {
 
   imgs.each((index, img) => {
     const imgUrl = $(img).attr("src");
-    
+
     if (!usedImageUrls.has(imgUrl)) {
       imgUrls.push(imgUrl);
     }
@@ -321,6 +328,23 @@ async function extractDoubleTweenFromImages(imgs, $) {
     })),
     id: uuidv4(),
   };
+}
+
+async function extractVideo($, html) {
+  const videosSrc = $("video source", html).attr("src");
+
+  if (videosSrc) {
+    return {
+      blockName: "Video",
+      icon: "/video.svg",
+      preview:"https://d32gktdq0wbhql.cloudfront.net/img/img-blocco-video-2.png",
+      type: "video",
+      url: videosSrc,
+      id: uuidv4(),
+    };
+  } else {
+    return null;
+  }
 }
 
 app.listen(port, () => {
